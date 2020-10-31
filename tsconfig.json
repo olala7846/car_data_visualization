@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "outDir": "./dsit/",
+    "sourceMap": true,   // Allow sourceMap for debugging
+    "target": "es5",
+    "allowJs": true,
+    "moduleResolution": "node",
+  }
+}

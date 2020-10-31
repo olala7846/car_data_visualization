@@ -1,0 +1,7 @@
+# npm modules
+node_modules/
+# tsc output directory
+.DS_Store
+.vscode/
+package-lock.json
+dist/bundle.js
