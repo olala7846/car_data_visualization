@@ -21,6 +21,8 @@ interface	EffectController  {
 
   fy: number;
   fz: number;
+  hz: number;  // hand rotation from Z-axes
+  htz: number;  // Hand spread
 };
 
 
@@ -33,6 +35,7 @@ let gridXY = false;
 let axes = true;
 let ground = true;
 let arm: Object3D, forearm: Object3D, body: Object3D;
+let handLeft: Object3D, handRight: Object3D;
 
 function fillScene() {
 	scene = new THREE.Scene();
@@ -57,11 +60,17 @@ function fillScene() {
     color: 0x95E4FB, specular: 0x95E4FB, shininess: 100 });
 	var robotBodyMaterial = new THREE.MeshPhongMaterial({
     color: 0x279933, specular: 0x279933, shininess: 100 });
+  let robotHandLeftMaterial = new THREE.MeshPhongMaterial({
+    color: 0xcc3399, specular: 0xCC3399, shininess:20 })
+  let robotHandRightMaterial = new THREE.MeshPhongMaterial({
+    color: 0xDD3388, specular: 0XDD3388, shininess:20 })
 
 	var torus = new THREE.Mesh(
 		new THREE.TorusGeometry( 22, 15, 32, 32 ), robotBaseMaterial );
 	torus.rotation.x = 90 * Math.PI/180;
-	scene.add( torus );
+  scene.add( torus );
+
+
 
 	forearm = new THREE.Object3D();
 	var faLength = 80;
@@ -87,6 +96,18 @@ function fillScene() {
 
   arm.position.y = bodyLength;
   body.add(arm);
+
+  const handLength = 38;
+  handLeft = new THREE.Object3D();
+  createRobotGrabber(handLeft, handLength, robotHandLeftMaterial);
+  handLeft.position.y = faLength;
+  forearm.add(handLeft);
+
+  handRight = new THREE.Object3D();
+  createRobotGrabber(handRight, handLength, robotHandRightMaterial);
+  handRight.position.y = faLength;
+  forearm.add(handRight);
+
   scene.add(body)
 	// ALSO CHECK OUT GUI CONTROLS FOR BODY
 	// IN THE FUNCTIONS setupGUI() and render()
@@ -114,6 +135,14 @@ function createRobotExtender( part: Object3D, length: number, material: Material
 	cylinder.rotation.x = 90 * Math.PI/180;
 	cylinder.position.y = length;
 	part.add( cylinder );
+}
+
+function createRobotGrabber(part: Object3D, length: number, material: Material)
+{
+	var box = new THREE.Mesh(
+		new THREE.BoxGeometry( 30, length, 4 ), material );
+	box.position.y = length/2;
+	part.add( box );
 }
 
 function createRobotCrane( part: Object3D, length: number, material: Material )
@@ -244,7 +273,12 @@ function render() {
 	arm.rotation.z = effectController.uz * Math.PI/180;	// roll
 
 	forearm.rotation.y = effectController.fy * Math.PI/180;	// yaw
-	forearm.rotation.z = effectController.fz * Math.PI/180;	// roll
+  forearm.rotation.z = effectController.fz * Math.PI/180;	// roll
+
+  handLeft.rotation.z = effectController.hz * Math.PI/180; //tilt
+  handRight.rotation.z = effectController.hz * Math.PI/180; //tilt
+  handLeft.position.z = effectController.htz;
+  handRight.position.z = -effectController.htz;
 
 	renderer.render(scene, camera);
 }
@@ -266,7 +300,10 @@ function setupGui() {
 		uz: -15.0,
 
 		fy: 10.0,
-		fz: 60.0
+    fz: 60.0,
+
+    hz: 0.0,
+    htz: 10,
 	};
 
 	var gui = new dat.GUI();
@@ -282,7 +319,9 @@ function setupGui() {
 	h.add(effectController, "uy", -180.0, 180.0, 0.025).name("Upper arm y");
 	h.add(effectController, "uz", -45.0, 45.0, 0.025).name("Upper arm z");
 	h.add(effectController, "fy", -180.0, 180.0, 0.025).name("Forearm y");
-	h.add(effectController, "fz", -120.0, 120.0, 0.025).name("Forearm z");
+  h.add(effectController, "fz", -120.0, 120.0, 0.025).name("Forearm z");
+  h.add(effectController, "hz", -45, 45, 0.025).name("Hand z rotation");
+  h.add(effectController, "htz", 2.0, 17, 0.025).name("Hand spread");
 }
 
 
