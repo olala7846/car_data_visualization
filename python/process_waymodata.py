@@ -15,6 +15,7 @@ from waymo_open_dataset import dataset_pb2 as open_dataset
 
 FILENAME = './data/frames'
 OUT_DIR = './out'
+POINT_CLOUD_COLOR = np.array([1.0, 1.0, 1.0])
 
 def main():
   """Main process function"""
@@ -69,9 +70,9 @@ class Frame():
     for camera_id, camera_points in enumerate(points):
       file_name = '{}/lidar{}.pcd'.format(OUT_DIR, camera_id)
       points_np = np.asarray(camera_points)
-      point_cloud = open3d.geometry.PointCloud()
-      point_cloud.points = open3d.utility.Vector3dVector(points_np)
-      # TODO(hcchao): Init PointCloud directly with vectors?
+      points = open3d.utility.Vector3dVector(points_np)
+      point_cloud = open3d.geometry.PointCloud(points)
+      point_cloud.paint_uniform_color(POINT_CLOUD_COLOR)
       open3d.io.write_point_cloud(file_name, point_cloud, print_progress=True)
 
 

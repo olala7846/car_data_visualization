@@ -1,19 +1,42 @@
 import * as THREE from 'three';
 import * as dat from 'dat.gui';
 import {
-  Geometry, WebGLRenderer, OrthographicCamera, Scene, Vector3,
-  PerspectiveCamera, DirectionalLight, AmbientLight, Object3D,
-  Material, GridHelper, AxesHelper, MeshPhongMaterial, PointLight, Color, PlaneGeometry
+  Geometry, WebGLRenderer, Scene,
+  PerspectiveCamera, DirectionalLight, Object3D,
+  Material, GridHelper, AxesHelper, Color, PlaneGeometry, PointsMaterial
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
 
-// TODO(olala7846): Enable caching to speed up compile and load time.
+interface EffectController {
+  // Laser control, see LaserName.Name enum in dataset.proto
+  laserTop: boolean,
+  laserFront: boolean,
+  laserLeft: boolean,
+  laserRight: boolean,
+  laserRear: boolean,
 
-let path = "/dist/";	// STUDENT: set to "" to run on your computer, "/" for submitting code to Udacity
+  // Helper control
+  axesHelper: boolean,
+};
 
-let camera: PerspectiveCamera, scene: Scene, renderer: WebGLRenderer;
+const POINT_SIZE = 0.1;
+const DARK_SKY_COLOR = 0x141852;
+
+let camera: PerspectiveCamera;
 let cameraControls: OrbitControls;
+let effectController: EffectController;
+let renderer: WebGLRenderer;
+let scene: Scene;
+let axesHelper: AxesHelper;
+
+// Controllers
+let showLaserTop = true;
+let showLaserFront = true;
+let showLaserLeft = true;
+let showLaserRight = true;
+let showLaserRear = true;
+let showAxesHelper = true;
 
 let clock = new THREE.Clock();
 
@@ -23,15 +46,56 @@ function fillScene() {
   const pointCloudFileName = '/python/out/lidar0.pcd';
   loader.load(
     pointCloudFileName,
-    (mesh) => {  // on resource loaded
-      scene.add(mesh);
+    (points: THREE.Points) => {  // onLoad
+      points.traverse((point) => {
+        if (point instanceof THREE.Points) {
+          console.log('Is points!');
+          let material = new PointsMaterial({
+            color: 0xffffff,
+            size: POINT_SIZE,
+          });
+          point.material = material;
+        }
+      });
+      scene.add(points);
     },
-    (xhr: any) => {
-      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    (progress: ProgressEvent) => {  // onProgress
+      console.log((progress.loaded / progress.total * 100) + '% loaded');
     },
-    (error) => {
+    (error: ErrorEvent) => {  // onError
       console.error('Error loading pcd ' + error.message);
     });
+
+    // Add plan (ground)
+    const planeGeometry = new THREE.PlaneGeometry(1000, 1000, 32, 32);
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x222222,
+      side: THREE.DoubleSide,
+    });
+    let plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    scene.add(plane);
+}
+
+function setupGui() {
+  effectController = {
+    laserTop: showLaserTop,
+    laserFront: showLaserFront,
+    laserLeft: showLaserLeft,
+    laserRight: showLaserRight,
+    laserRear: showLaserRear,
+    axesHelper: showAxesHelper,
+  };
+
+  let gui = new dat.GUI();
+  let sensers = gui.addFolder('Sensers');
+  let helpers = gui.addFolder('Helpers');
+  Object.keys(effectController).forEach((key: string) => {
+    if (key.startsWith('laser')) {
+      sensers.add(effectController, key).name(key);
+    } else if (key.endsWith('Helper')) {
+      helpers.add(effectController, key).name(key);
+    }
+  });
 }
 
 function init() {
@@ -45,14 +109,21 @@ function init() {
 	// renderer.gammaInput = true;
 	// renderer.gammaOutput = true;
 	renderer.setSize(canvasWidth, canvasHeight);
-	renderer.setClearColor( 0x0000, 1.0 );
+	renderer.setClearColor( DARK_SKY_COLOR, 1.0 );
 
-	// CAMERA
-	camera = new THREE.PerspectiveCamera( 55, canvasRatio, 2, 10000 );
-	camera.position.set( 10, 5, 15 );
+  // CAMERA
+  // Waymo dataset hehicle frame
+  //  The x-axis is positive forwards, y-axis is positive to the left,
+  //  z-axis is positive upwards. A vehicle pose defines the transform
+  //  from the vehicle frame to the global frame.
+  camera = new THREE.PerspectiveCamera( 55, canvasRatio, 2, 10000 );
+  camera.position.set(10, -20, 5);
+  camera.up.set(0, 0, 1);
+  camera.lookAt(0, 0, 0);
 	// CONTROLS
-	cameraControls = new OrbitControls(camera, renderer.domElement);
-	cameraControls.target.set(0,0,0);
+  cameraControls = new OrbitControls(camera, renderer.domElement);
+  cameraControls.enableRotate = true;
+  cameraControls.enablePan = true;
 
 }
 
@@ -65,6 +136,18 @@ function addToDOM() {
 	container.appendChild( renderer.domElement );
 }
 
+function drawHelpers() {
+  if (showAxesHelper) {
+    if (axesHelper === undefined) {
+      axesHelper = new AxesHelper(2);
+      axesHelper.position.set(0, 0, 0);
+    }
+    scene.add(axesHelper);
+  } else {
+    scene.remove(axesHelper);
+  }
+}
+
 function animate() {
 	window.requestAnimationFrame(animate);
 	render();
@@ -73,10 +156,17 @@ function animate() {
 function render() {
 	var delta = clock.getDelta();
 	cameraControls.update();
-	renderer.render(scene, camera);
+  renderer.render(scene, camera);
+
+  if (effectController.axesHelper !== showAxesHelper) {
+    showAxesHelper = effectController.axesHelper;
+    drawHelpers();
+  }
 }
 
 init();
 fillScene();
+setupGui();
+drawHelpers();
 addToDOM();
 animate();

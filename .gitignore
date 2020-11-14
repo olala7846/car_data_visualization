@@ -3,6 +3,10 @@ node_modules/
 # tsc output directory
 .DS_Store
 .vscode/
+__pycache__/
 package-lock.json
 dist/*.bundle.js
 python/out
+python/waymo_open_dataset/
+# git submodule
+waymo-open-dataset
