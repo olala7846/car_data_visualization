@@ -5,3 +5,4 @@ node_modules/
 .vscode/
 package-lock.json
 dist/*.bundle.js
+python/out
