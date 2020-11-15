@@ -8,93 +8,125 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
 
-interface EffectController {
-  // Laser control, see LaserName.Name enum in dataset.proto
-  laserTop: boolean,
-  laserFront: boolean,
-  laserLeft: boolean,
-  laserRight: boolean,
-  laserRear: boolean,
+enum LaserName {
+  UNKNOWN = "UNKNOWN",
+  TOP = "TOP",
+  FRONT = "FRONT",
+  SIDE_LEFT = "SIDE_LEFT",
+  SIDE_RIGHT = "SIDE_RIGHT",
+  REAR = "REAR",
+}
 
-  // Helper control
+interface LaserConfig {
+  top: boolean,
+  front: boolean,
+  sideLeft: boolean,
+  sideRight: boolean,
+  rear: boolean,
+};
+
+let laserUiControl: LaserConfig = {
+  top: true,
+  front: true,
+  sideLeft: true,
+  sideRight: true,
+  rear: true,
+};
+let laserEnabled = new Map<LaserName, boolean>([
+  [LaserName.TOP, true],
+  [LaserName.FRONT, true],
+  [LaserName.SIDE_LEFT, true],
+  [LaserName.SIDE_RIGHT, true],
+  [LaserName.REAR, true],
+]);
+
+interface HelperControl {
   axesHelper: boolean,
 };
 
-const POINT_SIZE = 0.1;
+const POINT_SIZE = 0.05;
 const DARK_SKY_COLOR = 0x141852;
 
 let camera: PerspectiveCamera;
 let cameraControls: OrbitControls;
-let effectController: EffectController;
 let renderer: WebGLRenderer;
 let scene: Scene;
-let axesHelper: AxesHelper;
+let clock = new THREE.Clock();
+let helperControl: HelperControl;
 
 // Controllers
-let showLaserTop = true;
-let showLaserFront = true;
-let showLaserLeft = true;
-let showLaserRight = true;
-let showLaserRear = true;
+let axesHelper: AxesHelper;
 let showAxesHelper = true;
-
-let clock = new THREE.Clock();
+const allLaserNames = [
+  LaserName.TOP,
+  LaserName.FRONT,
+  LaserName.SIDE_LEFT,
+  LaserName.SIDE_RIGHT,
+  LaserName.REAR
+];
+let laserColor = new Map<LaserName, number>();
+laserColor.set(LaserName.TOP, 0xfc0303);
+laserColor.set(LaserName.FRONT, 0x03fc0b);
+laserColor.set(LaserName.SIDE_LEFT, 0xfc03db);
+laserColor.set(LaserName.SIDE_RIGHT, 0x03a1fc);
+laserColor.set(LaserName.REAR, 0xfcf003);
+let laserObjectMap = new Map<LaserName, Object3D>();
 
 function fillScene() {
-	scene = new THREE.Scene();
-  const loader = new PCDLoader();
-  const pointCloudFileName = '/python/out/lidar0.pcd';
-  loader.load(
-    pointCloudFileName,
-    (points: THREE.Points) => {  // onLoad
-      points.traverse((point) => {
-        if (point instanceof THREE.Points) {
-          console.log('Is points!');
-          let material = new PointsMaterial({
-            color: 0xffffff,
-            size: POINT_SIZE,
-          });
-          point.material = material;
-        }
-      });
-      scene.add(points);
-    },
-    (progress: ProgressEvent) => {  // onProgress
-      console.log((progress.loaded / progress.total * 100) + '% loaded');
-    },
-    (error: ErrorEvent) => {  // onError
-      console.error('Error loading pcd ' + error.message);
-    });
+  scene = new THREE.Scene();
 
-    // Add plan (ground)
-    const planeGeometry = new THREE.PlaneGeometry(1000, 1000, 32, 32);
-    const planeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x222222,
-      side: THREE.DoubleSide,
-    });
-    let plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    scene.add(plane);
+  const loader = new PCDLoader();
+
+  allLaserNames.forEach((laserName: LaserName) => {
+
+    let pcdFile = `/python/out/laser_${laserName}.pcd`;
+    loader.load(
+      pcdFile,
+      (points: THREE.Points) => {  // onLoad
+        points.traverse((point) => {
+          if (point instanceof THREE.Points) {
+            let material = new PointsMaterial({
+              color: laserColor.get(laserName),
+              size: POINT_SIZE,
+            });
+            point.material = material;
+          }
+        });
+        laserObjectMap.set(laserName, points);
+        scene.add(points);
+      },
+      (progress: ProgressEvent) => {  // onProgress
+        console.log((progress.loaded / progress.total * 100) + '% loaded');
+      },
+      (error: ErrorEvent) => {  // onError
+        console.error('Error loading pcd ' + error.message);
+      });
+  });
+
+  // Add plan (ground)
+  const planeGeometry = new THREE.PlaneGeometry(1000, 1000, 32, 32);
+  const planeMaterial = new THREE.MeshBasicMaterial({
+    color: 0x222222,
+    side: THREE.DoubleSide,
+  });
+  let plane = new THREE.Mesh(planeGeometry, planeMaterial);
+  scene.add(plane);
 }
 
 function setupGui() {
-  effectController = {
-    laserTop: showLaserTop,
-    laserFront: showLaserFront,
-    laserLeft: showLaserLeft,
-    laserRight: showLaserRight,
-    laserRear: showLaserRear,
+  helperControl = {
     axesHelper: showAxesHelper,
   };
 
   let gui = new dat.GUI();
   let sensers = gui.addFolder('Sensers');
+  Object.keys(laserUiControl).forEach((laserName: string) => {
+    sensers.add(laserUiControl, laserName).name(laserName);
+  });
+
   let helpers = gui.addFolder('Helpers');
-  Object.keys(effectController).forEach((key: string) => {
-    if (key.startsWith('laser')) {
-      sensers.add(effectController, key).name(key);
-    } else if (key.endsWith('Helper')) {
-      helpers.add(effectController, key).name(key);
-    }
+  Object.keys(helperControl).forEach((key: string) => {
+    helpers.add(helperControl, key).name(key);
   });
 }
 
@@ -153,15 +185,35 @@ function animate() {
 	render();
 }
 
+function updateLaser(laserName: LaserName, enabled: boolean) {
+  if (enabled == laserEnabled.get(laserName)) {
+    return;  // nothing changed
+  }
+  let pointCloud = laserObjectMap.get(laserName);
+  if (enabled) {
+    scene.add(pointCloud);
+  } else {
+    scene.remove(pointCloud);
+  }
+  laserEnabled.set(laserName, enabled);
+}
+
 function render() {
+  // modify scene if ui config change
+  updateLaser(LaserName.TOP, laserUiControl.top);
+  updateLaser(LaserName.FRONT, laserUiControl.front);
+  updateLaser(LaserName.SIDE_LEFT, laserUiControl.sideLeft);
+  updateLaser(LaserName.SIDE_RIGHT, laserUiControl.sideRight);
+  updateLaser(LaserName.REAR, laserUiControl.rear);
+
+  if (helperControl.axesHelper !== showAxesHelper) {
+    showAxesHelper = helperControl.axesHelper;
+    drawHelpers();
+  }
+
 	var delta = clock.getDelta();
 	cameraControls.update();
   renderer.render(scene, camera);
-
-  if (effectController.axesHelper !== showAxesHelper) {
-    showAxesHelper = effectController.axesHelper;
-    drawHelpers();
-  }
 }
 
 init();

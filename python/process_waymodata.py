@@ -34,6 +34,8 @@ def sample_single_frame(dataset):
 
 class Frame():
   def __init__(self, frame, frame_id):
+    # sort lasers according to name
+    frame.lasers.sort(key=lambda laser: laser.name)
     self.frame = frame
     self.frame_id = frame_id
 
@@ -66,9 +68,13 @@ class Frame():
       camera_projections,
       range_image_top_pose,
       ri_index=1)
+    laser_names = [laser.name for laser in self.frame.lasers]
+    print(laser_names)
     # points is an array of size 5 (different cameras)
-    for camera_id, camera_points in enumerate(points):
-      file_name = '{}/lidar{}.pcd'.format(OUT_DIR, camera_id)
+    for laser_name, camera_points in zip(laser_names, points):
+      file_name = '{}/laser_{}.pcd'.format(
+        OUT_DIR, open_dataset.LaserName.Name.Name(laser_name))
+      print(file_name)
       points_np = np.asarray(camera_points)
       points = open3d.utility.Vector3dVector(points_np)
       point_cloud = open3d.geometry.PointCloud(points)
