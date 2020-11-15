@@ -5,6 +5,7 @@ import math
 import numpy as np
 import itertools
 import open3d
+import json
 
 # tf.enable_eager_execution()
 
@@ -23,7 +24,7 @@ def main():
   frame_proto = sample_single_frame(dataset)
   frame = Frame(frame_proto, 1)
 
-  frame.get_range_data()
+  frame.get_frustrum_json()
 
 
 def sample_single_frame(dataset):
@@ -80,6 +81,22 @@ class Frame():
       point_cloud = open3d.geometry.PointCloud(points)
       point_cloud.paint_uniform_color(POINT_CLOUD_COLOR)
       open3d.io.write_point_cloud(file_name, point_cloud, print_progress=True)
+
+  def get_frustrum_json(self):
+    context = self.frame.context
+    frustrums = list()
+    for camera in context.camera_calibrations:
+      camera_name = open_dataset.CameraName.Name.Name(camera.name)
+      frustrums.append({
+        'name': camera_name,
+        'intrinsic': [f for f in camera.intrinsic],
+        'extrinsic': [t for t in camera.extrinsic.transform],
+      })
+    data = {'frustrums': frustrums}
+    file_name = '{}/{}.frustrum.json'.format(OUT_DIR, self.frame_id)
+    with open(file_name, 'w') as outfile:
+      json.dump(data, outfile)
+
 
 
 if __name__ == "__main__":
