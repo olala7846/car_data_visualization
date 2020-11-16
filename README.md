@@ -22,3 +22,10 @@ Node JS version v14.15.0 on Mac OSX
 
 ### Webpack
 https://webpack.js.org/guides/typescript/
+
+### Data
+Waymo Open dataset
+https://github.com/waymo-research/waymo-open-dataset
+
+See this post for where each senor locates
+https://blog.waymo.com/2020/03/introducing-5th-generation-waymo-driver.html
