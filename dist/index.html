@@ -6,10 +6,30 @@
 		<style>
 			body { margin: 0; }
 			canvas { display: block; }
+      .full {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      #container2d {
+        /* make 2d canvas on top of 3d canvas and don't catch mouse events */
+        z-index: 10;
+        pointer-events: none;
+      }
+      #canvas2d {
+        position:absolute;
+        bottom: 0px;
+        right: 0px;
+      }
 		</style>
 	</head>
-	<body style="background-color: black;">
-    <div id="container" style="background-color: gray;">
+  <body style="background-color: black;">
+    <div id="container3d" class="full"></div>
+    <div id="container2d" class="full">
+      <canvas id='canvas2d'></canvas>
+    </div>
     <script src="common.bundle.js"></script>
     <script src="main.bundle.js"></script>
     </div>
