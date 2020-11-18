@@ -38,8 +38,6 @@ const CAR_X = 5.18;
 const CAR_Y = 2.03;
 const CAR_Z = 1.78;
 
-const HELPER_CAMERA_WIDTH = 300;
-
 let laserUiControl: LaserConfig = {
   top: true,
   front: true,
@@ -62,6 +60,13 @@ interface HelperControl {
 
 const POINT_SIZE = 0.05;
 const DARK_SKY_COLOR = 0x141852;
+
+
+const WINDOW_WIDTH = window.innerWidth;
+const WINDOW_HEIGHT = window.innerHeight;
+const MAIN_PORT_WIDTH = WINDOW_WIDTH * 2 / 3;
+const MAIN_PORT_HEIGHT = WINDOW_HEIGHT;
+const HELPER_PORT_WIDTH = WINDOW_WIDTH - MAIN_PORT_WIDTH;
 
 let camera: PerspectiveCamera;
 let cameraControls: OrbitControls;
@@ -185,15 +190,11 @@ function setupGui() {
 }
 
 function init() {
-	let canvasWidth = window.innerWidth;
-	let canvasHeight = window.innerHeight;
-  let mainPortRatio = (canvasWidth - HELPER_CAMERA_WIDTH)/ canvasHeight;
+  let mainPortRatio = MAIN_PORT_WIDTH / MAIN_PORT_HEIGHT;
 
 	// RENDERER
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	// renderer.gammaInput = true;
-	// renderer.gammaOutput = true;
-	renderer.setSize(canvasWidth, canvasHeight);
+	renderer.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
   renderer.setClearColor( DARK_SKY_COLOR, 1.0 );
 
   renderer.autoClear = false;
@@ -290,8 +291,9 @@ function initSingleCameraHelper(cameraData: any) {
   // Matrix4D.elements stores data in column major form, we need to transpose it
   transform = transform.transpose();
 
-  // TODO: camera aspect ratio seems a bit off
+  // TODO: camera aspect ratio seems a bit off? (always equals to 1)
   let aspectRatio = fu/fv;
+  console.log(`fu:${fu}, fv: ${fv} aspectRatio: ${aspectRatio}`);
   // all camera images has width 1920
   let fov = Math.atan2(fv, 960.0) / Math.PI * 180;
   let perspectiveCamera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.5, 30);
@@ -322,25 +324,28 @@ function render() {
 	var delta = clock.getDelta();
   cameraControls.update();
 
-  let helperWidth = HELPER_CAMERA_WIDTH;
+  let helperWidth = WINDOW_WIDTH / 3;
 
   renderer.clear();
 
   // Set view port to render multiple cameras
-  renderer.setViewport(0, 0, window.innerWidth - helperWidth, window.innerHeight);
+  renderer.setViewport(0, 0, MAIN_PORT_WIDTH, MAIN_PORT_HEIGHT);
   renderer.render(scene, camera);
 
   // Draw helper camera
   if (!!helperCameraName && helperCameraName !== "None") {
     let helperCamera = cameraMap.get(helperCameraName);
     let helperHeight = helperWidth / helperCamera.aspect;
-    renderer.setViewport(window.innerWidth - helperWidth, 300, helperWidth, helperHeight);
+    renderer.setViewport(
+      MAIN_PORT_WIDTH, MAIN_PORT_HEIGHT / 3, helperWidth, helperHeight);
     renderer.render(scene, helperCamera);
   }
 }
 
 function drawImage(cameraName: string) {
   let canvas = document.getElementById('canvas2d') as HTMLCanvasElement;
+  canvas.width = WINDOW_WIDTH;
+  canvas.height = WINDOW_HEIGHT;
   let context2d = canvas.getContext('2d');
   // always clear for redraw
   context2d.clearRect(0, 0, canvas.width, canvas.height);
@@ -353,12 +358,15 @@ function drawImage(cameraName: string) {
   // dw, dh for destination width and height
   loader.load(imagePath, (image) => {
     // sw, sh for source width and source height;
+    // dw, dh for destination width and source height;
     const sw = image.width;
     const sh = image.height;
-    const dw = HELPER_CAMERA_WIDTH;
-    const dh = dw * sh / sw;
+    const dw = HELPER_PORT_WIDTH;
+    const dh = Math.round(dw * sh / sw);
     // Scale image and put it in lower left corner.
-    context2d.drawImage(image, 0, 0, sw, sh, canvas.width - dw, 0, dw, dh);
+    context2d.drawImage(
+      image, 0, 0, sw, sh,
+      MAIN_PORT_WIDTH, WINDOW_HEIGHT - dh, dw, dh);
   },
   undefined,
   (error) => {
