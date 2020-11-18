@@ -33,6 +33,17 @@ interface LaserConfig {
   rear: boolean,
 };
 
+interface LabelData {
+  centerX: number,
+  centerY: number,
+  centerZ: number,
+  length: number,
+  width: number,
+  height: number,
+  heading: number,
+  type: string,
+}
+
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
 const CAR_X = 5.18;
 const CAR_Y = 2.03;
@@ -75,7 +86,7 @@ let scene: Scene;
 let clock = new THREE.Clock();
 let helperControl: HelperControl;
 // Camera frustrum data
-let cameraCalibration: any;
+let frameJsonData: any;
 let car: Object3D;
 
 // Controllers
@@ -143,7 +154,7 @@ function fillScene() {
 function setupGui() {
   helperControl = {
     axesHelper: true,
-    cameraName: "None",
+    cameraName: CameraName.FRONT,
   };
 
   let gui = new dat.GUI();
@@ -215,6 +226,7 @@ function init() {
 
   car = new Object3D();
   let carGeometry = new BoxGeometry(CAR_X, CAR_Y, CAR_Z);
+
   let carWireFrame = new WireframeGeometry(carGeometry);
   let carBoundingBox = new LineSegments(carWireFrame);
   carBoundingBox.position.setX(1.5);
@@ -254,33 +266,34 @@ function updateLaser(laserName: LaserName, enabled: boolean) {
   laserEnabled.set(laserName, enabled);
 }
 
-function fetchCameraCalibration() {
-  // f_v, f_u: focal length of the camera
-  // c_v, c_u: center point (image coordinate) of the center point
-  // http://mesh.brown.edu/en193s08-2003/notes/en193s08-proj.pdf
-  const cameraCalibrationJson = '/python/out/1.frustrum.json';
+function fetchFrameJsonData() {
+  const cameraCalibrationJson = '/python/out/1.data.json';
   fetch(cameraCalibrationJson)
   .then((response) => {
     return response.json();
   }).then((json) => {
-    cameraCalibration = json;
+    frameJsonData = json;
     initCameraHelpers();
+    init3dLabels(json);
   });
 }
 
 function initCameraHelpers() {
-  if (cameraCalibration === undefined) {
+  if (frameJsonData === undefined) {
     console.log('waiting from camera calibration data...');
     return;
   }
 
-  let frustrums: Array<any> = cameraCalibration['frustrums'];
+  let frustrums: Array<any> = frameJsonData['frustrums'];
   frustrums.forEach((cameraData: any) => {
     initSingleCameraHelper(cameraData);
   });
 }
 
 function initSingleCameraHelper(cameraData: any) {
+  // f_v, f_u: focal length of the camera
+  // c_v, c_u: center point (image coordinate) of the center point
+  // http://mesh.brown.edu/en193s08-2003/notes/en193s08-proj.pdf
   let cameraName = cameraData.name;
   let fv, fu, cv, cu;
   let k1, k2, p1, p2, k3
@@ -313,6 +326,28 @@ function initSingleCameraHelper(cameraData: any) {
   cameraHelperMap.set(cameraName, helper);
 }
 
+function init3dLabels(jsonData: any) {
+  console.log(jsonData);
+  let labels = frameJsonData['labels'];
+  labels.forEach((label: any) => {
+    drawSingle3dLabel(label);
+  });
+}
+
+function drawSingle3dLabel(labelData: LabelData) {
+  let labelGeometry = new BoxGeometry(
+    labelData.length, labelData.width, labelData.height);
+  let labelWireFrame = new WireframeGeometry(labelGeometry);
+  let labelBoundingBox = new LineSegments(labelWireFrame);
+  labelBoundingBox.position.set(
+    labelData.centerX, labelData.centerY, labelData.centerZ);
+  // The heading of the bounding box (in radians).  The heading is the angle
+  // required to rotate +x to the surface normal of the box front face. It is
+  // normalized to [-pi, pi).
+  labelBoundingBox.rotateZ(labelData.heading);
+  scene.add(labelBoundingBox);
+}
+
 function render() {
   // modify scene if ui config change
   updateLaser(LaserName.TOP, laserUiControl.top);
@@ -333,8 +368,8 @@ function render() {
   renderer.render(scene, camera);
 
   // Draw helper camera
-  if (!!helperCameraName && helperCameraName !== "None") {
-    let helperCamera = cameraMap.get(helperCameraName);
+  if (cameraMap.has(helperCameraName as any)) {
+    let helperCamera = cameraMap.get(helperCameraName as CameraName);
     let helperHeight = helperWidth / helperCamera.aspect;
     renderer.setViewport(
       MAIN_PORT_WIDTH, MAIN_PORT_HEIGHT / 3, helperWidth, helperHeight);
@@ -374,7 +409,7 @@ function drawImage(cameraName: string) {
   });
 }
 
-fetchCameraCalibration();
+fetchFrameJsonData();
 init();
 fillScene();
 initHelpers();

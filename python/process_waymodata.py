@@ -13,6 +13,7 @@ from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import  frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
+from waymo_open_dataset.label_pb2 import Label
 
 FILENAME = './data/frames'
 OUT_DIR = './out'
@@ -24,7 +25,7 @@ def main():
   frame_proto = sample_single_frame(dataset)
   frame = Frame(frame_proto, 1)
 
-  frame.get_frustrum_json()
+  frame.get_data_json()
 
 
 def sample_single_frame(dataset):
@@ -82,7 +83,10 @@ class Frame():
       point_cloud.paint_uniform_color(POINT_CLOUD_COLOR)
       open3d.io.write_point_cloud(file_name, point_cloud, print_progress=True)
 
-  def get_frustrum_json(self):
+  def get_data_json(self):
+    data = dict()
+
+    # Camera calibration
     context = self.frame.context
     frustrums = list()
     for camera in context.camera_calibrations:
@@ -92,12 +96,26 @@ class Frame():
         'intrinsic': [f for f in camera.intrinsic],
         'extrinsic': [t for t in camera.extrinsic.transform],
       })
-    data = {'frustrums': frustrums}
-    file_name = '{}/{}.frustrum.json'.format(OUT_DIR, self.frame_id)
+    data['frustrums'] = frustrums
+
+    labels = list()
+    for label in self.frame.laser_labels:
+      labels.append({
+        'centerX': label.box.center_x,
+        'centerY': label.box.center_y,
+        'centerZ': label.box.center_z,
+        'length': label.box.length,
+        'width': label.box.width,
+        'height': label.box.height,
+        'heading': label.box.heading,
+        'type': Label.Type.Name(label.type),
+      })
+
+    # 3D labels
+    data['labels'] = labels
+    file_name = '{}/{}.data.json'.format(OUT_DIR, self.frame_id)
     with open(file_name, 'w') as outfile:
       json.dump(data, outfile)
-
-
 
 if __name__ == "__main__":
   main()
