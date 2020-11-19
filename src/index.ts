@@ -3,7 +3,7 @@ import * as dat from 'dat.gui';
 import {
   Geometry, WebGLRenderer, Scene,
   PerspectiveCamera, DirectionalLight, Object3D,
-  Material, GridHelper, AxesHelper, Color, PlaneGeometry, PointsMaterial, Matrix4, Vector3, BoxGeometry, MeshBasicMaterial, WireframeGeometry, LineSegments, BooleanKeyframeTrack, CameraHelper, ImageLoader
+  Material, GridHelper, AxesHelper, Color, PlaneGeometry, PointsMaterial, Matrix4, Vector3, BoxGeometry, MeshBasicMaterial, WireframeGeometry, LineSegments, BooleanKeyframeTrack, CameraHelper, ImageLoader, LineBasicMaterial
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
@@ -121,6 +121,14 @@ let cameraHelperMap = new Map<CameraName, CameraHelper>();
 let cameraMap = new Map<CameraName, PerspectiveCamera>();
 let helperCameraName: CameraName | "None" = CameraName.FRONT_RIGHT;
 
+let labelColor = new  Map<string, number> ([
+  ['TYPE_UNKNOWN', 0xffffff ],
+  ['TYPE_VEHICLE', 0xebe534 ],
+  ['TYPE_PEDESTRIAN', 0x34eb4c ],
+  ['TYPE_SIGN', 0x348feb ],
+  ['TYPE_CYCLIST', 0xffffff ],
+]);
+
 function fillScene() {
   scene = new THREE.Scene();
 
@@ -175,7 +183,7 @@ function setupGui() {
   };
 
   let gui = new dat.GUI();
-  let sensors = gui.addFolder('Sensers');
+  let sensors = gui.addFolder('Sensors');
   Object.keys(laserUiControl).forEach((laserName: string) => {
     sensors.add(laserUiControl, laserName).name(laserName);
   });
@@ -406,7 +414,10 @@ function drawSingle3dLabel(labelData: LabelData) {
   let labelGeometry = new BoxGeometry(
     labelData.length, labelData.width, labelData.height);
   let labelWireFrame = new WireframeGeometry(labelGeometry);
-  let labelBoundingBox = new LineSegments(labelWireFrame);
+  let labelMaterial = new LineBasicMaterial({
+    color: labelColor.get(labelData.type),
+  });
+  let labelBoundingBox = new LineSegments(labelWireFrame, labelMaterial);
   labelBoundingBox.position.set(
     labelData.centerX, labelData.centerY, labelData.centerZ);
   // The heading of the bounding box (in radians).  The heading is the angle
