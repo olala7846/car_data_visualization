@@ -67,6 +67,11 @@ let laserEnabled = new Map<LaserName, boolean>([
 interface HelperControl {
   axesHelper: boolean,
   cameraName: string,
+  showUnknownLabels: boolean,
+  showVehicleLabels: boolean,
+  showPedestrianLabels: boolean,
+  showSignLabels: boolean,
+  showCyclistLabels: boolean,
 };
 
 const POINT_SIZE = 0.05;
@@ -88,6 +93,13 @@ let helperControl: HelperControl;
 // Camera frustrum data
 let frameJsonData: any;
 let car: Object3D;
+
+// Labels
+let unknownLabels: Array<Object3D> = [];
+let vehicleLabels: Array<Object3D> = [];
+let pedestrianLabels: Array<Object3D> = [];
+let signLabels: Array<Object3D> = [];
+let cyclistLabels: Array<Object3D> = [];
 
 // Controllers
 let axesHelper: AxesHelper;
@@ -155,6 +167,11 @@ function setupGui() {
   helperControl = {
     axesHelper: true,
     cameraName: CameraName.FRONT,
+    showUnknownLabels: true,
+    showVehicleLabels: true,
+    showPedestrianLabels: true,
+    showSignLabels: true,
+    showCyclistLabels: true,
   };
 
   let gui = new dat.GUI();
@@ -184,6 +201,7 @@ function setupGui() {
         }
       });
     });
+
   // Initial image draw.
   drawImage(helperCameraName);
 
@@ -196,6 +214,56 @@ function setupGui() {
       } else {
         scene.remove(axesHelper);
       }
+    });
+  helpers.add(helperControl, 'showUnknownLabels', 'Unknown labels')
+    .onChange((shouldShow) => {
+      unknownLabels.forEach((boundingBox) => {
+        if (shouldShow) {
+          scene.add(boundingBox);
+        } else {
+          scene.remove(boundingBox);
+        }
+      });
+    });
+  helpers.add(helperControl, 'showVehicleLabels', 'Vehicle labels')
+    .onChange((shouldShow) => {
+      vehicleLabels.forEach((boundingBox) => {
+        if (shouldShow) {
+          scene.add(boundingBox);
+        } else {
+          scene.remove(boundingBox);
+        }
+      });
+    });
+  helpers.add(helperControl, 'showPedestrianLabels', 'Pedestrian labels')
+    .onChange((shouldShow) => {
+      pedestrianLabels.forEach((boundingBox) => {
+        if (shouldShow) {
+          scene.add(boundingBox);
+        } else {
+          scene.remove(boundingBox);
+        }
+      });
+    });
+  helpers.add(helperControl, 'showSignLabels', 'Sign labels')
+    .onChange((shouldShow) => {
+      signLabels.forEach((boundingBox) => {
+        if (shouldShow) {
+          scene.add(boundingBox);
+        } else {
+          scene.remove(boundingBox);
+        }
+      });
+    });
+  helpers.add(helperControl, 'showCyclistLabels', 'Cyclyst labels')
+    .onChange((shouldShow) => {
+      cyclistLabels.forEach((boundingBox) => {
+        if (shouldShow) {
+          scene.add(boundingBox);
+        } else {
+          scene.remove(boundingBox);
+        }
+      });
     });
 
 }
@@ -345,6 +413,24 @@ function drawSingle3dLabel(labelData: LabelData) {
   // required to rotate +x to the surface normal of the box front face. It is
   // normalized to [-pi, pi).
   labelBoundingBox.rotateZ(labelData.heading);
+
+  switch(labelData.type) {
+    case 'TYPE_UNKNOWN':
+      unknownLabels.push(labelBoundingBox);
+      break;
+    case 'TYPE_VEHICLE':
+      vehicleLabels.push(labelBoundingBox);
+      break;
+    case 'TYPE_PEDESTRIAN':
+      pedestrianLabels.push(labelBoundingBox);
+      break;
+    case 'TYPE_SIGN':
+      signLabels.push(labelBoundingBox);
+      break;
+    case 'TYPE_CYCLIST':
+      cyclistLabels.push(labelBoundingBox);
+      break;
+  }
   scene.add(labelBoundingBox);
 }
 
