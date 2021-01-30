@@ -15,7 +15,8 @@ from waymo_open_dataset.utils import  frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 from waymo_open_dataset.label_pb2 import Label
 
-FILENAME = './data/frames'
+# FILENAME = './data/frames'
+FILENAME = './data/multiple_frames.tfrecord'
 OUT_DIR = './out'
 POINT_CLOUD_COLOR = np.array([1.0, 1.0, 1.0])
 
@@ -23,9 +24,9 @@ def main():
   """Main process function"""
   dataset = tf.data.TFRecordDataset(FILENAME, compression_type='')
   frame_proto = sample_single_frame(dataset)
-  frame = Frame(frame_proto, 1)
+  frame = Frame(frame_proto)
 
-  frame.get_data_json()
+  frame.save_camera_image()
 
 
 def sample_single_frame(dataset):
@@ -35,11 +36,11 @@ def sample_single_frame(dataset):
       return frame
 
 class Frame():
-  def __init__(self, frame, frame_id):
+  def __init__(self, frame_proto):
     # sort lasers according to name
-    frame.lasers.sort(key=lambda laser: laser.name)
-    self.frame = frame
-    self.frame_id = frame_id
+    frame_proto.lasers.sort(key=lambda laser: laser.name)
+    self.frame = frame_proto
+    self.frame_id = frame_proto.context.name
 
   def save_camera_image(self):
     for camer_image in self.frame.images:
@@ -71,12 +72,10 @@ class Frame():
       range_image_top_pose,
       ri_index=1)
     laser_names = [laser.name for laser in self.frame.lasers]
-    print(laser_names)
     # points is an array of size 5 (different cameras)
     for laser_name, camera_points in zip(laser_names, points):
       file_name = '{}/laser_{}.pcd'.format(
         OUT_DIR, open_dataset.LaserName.Name.Name(laser_name))
-      print(file_name)
       points_np = np.asarray(camera_points)
       points = open3d.utility.Vector3dVector(points_np)
       point_cloud = open3d.geometry.PointCloud(points)

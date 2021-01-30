@@ -8,5 +8,8 @@ package-lock.json
 dist/*.bundle.js
 python/out
 python/waymo_open_dataset/
+# Do not track raw data.
+python/data/*.tfrecord
+
 # git submodule
 waymo-open-dataset

@@ -1,0 +1,19 @@
+// Car data streaming service
+// author: olala7846@gmail.com
+
+syntax = "proto3";
+
+package car_data;
+
+service CarDataService {
+  rpc ListFrames(ListFramesRequest) returns (stream SingleFrame) {}
+}
+
+message ListFramesRequest {
+  int32 number_of_frames = 1;
+  int32 delay_ms = 2;
+}
+
+message SingleFrame {
+  int32 frame_id = 1;
+}
