@@ -5,10 +5,14 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { NgModule } from '@angular/core';
+import { SupportViewComponent } from './support-view/support-view.component';
+import { MainViewComponent } from './main-view/main-view.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    SupportViewComponent,
+    MainViewComponent
   ],
   imports: [
     BrowserAnimationsModule,
