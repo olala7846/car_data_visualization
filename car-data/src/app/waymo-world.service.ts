@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { Injectable } from '@angular/core';
 import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points, MeshPhongMaterial, MeshBasicMaterial } from 'three';
-import { SensorDataService } from './sensor-data.service';
+import { SensorDataService, LabelBoundingBox } from './sensor-data.service';
 import { LidarName, CameraName, LabelType } from './sensor-data.service';
 
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
@@ -24,7 +24,7 @@ export class WaymoWorldService {
   initialized: boolean = false;
   lidarData: Points;
   lidarDataMap = new Map<LidarName, Points>();
-  labels: Array<Object3D>;
+  labels: Array<LabelBoundingBox>;
 
   public enableAxesHelper = true;
   public enableGroundHelper = true;
@@ -32,6 +32,8 @@ export class WaymoWorldService {
     Object.values(LidarName).map((name) => [name, true]));
   public labelEnabledMap = new Map<LabelType, boolean>(
     Object.values(LabelType).map((type) => [type, true]));
+  public hasAtLeastOneLabel = new Map<LabelType, boolean>(
+    Object.values(LabelType).map((type) => [type, false]));
 
   constructor(private sensorDataService: SensorDataService) { }
 
@@ -139,12 +141,24 @@ export class WaymoWorldService {
     this.sensorDataService.getLabelData()
       .then((labels) => {
         this.labels = labels;
-        labels.forEach((label) => this.waymoVehicle.add(label));
+        labels.forEach((label) => {
+          this.scene.add(label.boundingBox);
+          this.hasAtLeastOneLabel.set(label.type, true);
+        });
       });
   }
 
   setLabelEnabled(labelName: string, enable: boolean): void {
     this.labelEnabledMap.set(labelName as LabelType, enable);
+    this.labels
+      .filter((label) => label.type === labelName)
+      .forEach((label) => {
+        if (enable) {
+          this.scene.add(label.boundingBox);
+        } else {
+          this.scene.remove(label.boundingBox);
+        }
+      });
   }
 
 }
