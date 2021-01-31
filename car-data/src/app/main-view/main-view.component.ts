@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { Component, OnInit } from '@angular/core';
-import { WebGLRenderer, PerspectiveCamera, Object3D, BoxGeometry, WireframeGeometry, LineSegments, Scene } from 'three';
+import { WebGLRenderer, PerspectiveCamera, Object3D, BoxGeometry, WireframeGeometry, LineSegments, Scene, AxesHelper } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Container } from '@angular/compiler/src/i18n/i18n_ast';
 
@@ -26,6 +26,7 @@ export class MainViewComponent implements OnInit {
   containerHeight: number;
   containerWidth: number;
   renderer: WebGLRenderer;
+  axesHelper: AxesHelper;
 
   // Waymo world objects
   scene: Scene;
@@ -35,11 +36,17 @@ export class MainViewComponent implements OnInit {
   constructor() { }
 
   ngOnInit(): void {
+  }
+
+  ngAfterViewInit(): void {
+    // For some reason all the three.js code won't work if put in ngOnInit.
+    // TODO: figure it out
     this.updateContainerSize();
     this.initThreeJs();
     this.initScene();
+    this.initDebugHelpers();
     this.addCanvasToDom();
-    this.startAnimation();
+    this.animate();
   }
 
   initThreeJs(): void {
@@ -57,8 +64,12 @@ export class MainViewComponent implements OnInit {
 
     this.car = this.initCar();
     scene.add(this.car);
+  }
 
-
+  initDebugHelpers(): void {
+    this.axesHelper = new AxesHelper(2000);
+    this.axesHelper.position.set(0, 0, 0);
+    this.scene.add(this.axesHelper);
   }
 
   initGround(): THREE.Mesh {
@@ -100,9 +111,10 @@ export class MainViewComponent implements OnInit {
   }
 
   initCamera(): PerspectiveCamera {
-    const mainPortRatio = this.containerWidth / this.containerWidth;
+    const mainPortRatio = this.containerWidth / this.containerHeight;
     let camera = new THREE.PerspectiveCamera(55, mainPortRatio, 2, 10000);
     // In the Waymo vehicle workd, +z is up. +x is front, +y is left.
+    camera.position.set(100, -100, 5);
     camera.up.set(0, 0, 1);
     camera.lookAt(0, 0, 0);
     return camera;
@@ -118,17 +130,17 @@ export class MainViewComponent implements OnInit {
   addCanvasToDom(): void {
     // Find and remove any existing canvas
     let container = document.getElementById(MAIN_VIEW_CONTAINER_ID);
-    let canvases = document.getElementsByClassName('canvas');
+    let canvases = document.getElementsByTagName('canvas');
     if (canvases.length > 0) {
-      for (let canvas of Array.from(canvases)) {
-        container.removeChild(canvas);
-      }
+      container.removeChild(canvases[0]);
+      // for (let canvas of Array.from(canvases)) {
+      //   container.removeChild(canvas);
+      // }
     }
     container.appendChild(this.renderer.domElement);
   }
 
   updateContainerSize(): void {
-    let sizeChanged = false;
     let container = document.getElementById(MAIN_VIEW_CONTAINER_ID);
     if (this.containerWidth == container.clientWidth &&
       this.containerHeight == container.clientHeight) {
@@ -140,16 +152,17 @@ export class MainViewComponent implements OnInit {
     this.updateRendererSize();
   }
 
-  startAnimation(): void {
-    window.requestAnimationFrame(this.startAnimation.bind(this));
+  animate(): void {
+    window.requestAnimationFrame(this.animate.bind(this));
     this.render()
   }
 
   render(): void {
     this.updateContainerSize();
     this.cameraControls.update();
-    this.renderer.clear();
+    // this.renderer.clear();
 
+    // this.renderer.setViewport(0, 0, this.containerWidth, this.containerHeight);
     this.renderer.render(this.scene, this.camera);
   }
 
