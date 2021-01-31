@@ -68,7 +68,7 @@ export class MainViewComponent implements OnInit {
     const mainPortRatio = this.containerWidth / this.containerHeight;
     let camera = new THREE.PerspectiveCamera(55, mainPortRatio, 2, 10000);
     // In the Waymo vehicle workd, +z is up. +x is front, +y is left.
-    camera.position.set(100, -100, 5);
+    camera.position.set(35, -80, 55);
     camera.up.set(0, 0, 1);
     camera.lookAt(0, 0, 0);
     return camera;

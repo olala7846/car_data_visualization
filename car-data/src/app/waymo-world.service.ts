@@ -24,14 +24,13 @@ export class WaymoWorldService {
   initialized: boolean = false;
   lidarData: Points;
   lidarDataMap = new Map<LidarName, Points>();
+  labels: Array<Object3D>;
 
   public enableAxesHelper = true;
   public lidarEnabledMap = new Map<LidarName, boolean>(
     Object.values(LidarName).map((name) => [name, true]));
 
-  constructor(private sensorDataService: SensorDataService) {
-    // Inject data service to fetch point cloud data
-  }
+  constructor(private sensorDataService: SensorDataService) { }
 
   // Initialize waymo world (three.js scene)
   init(): void {
@@ -51,6 +50,8 @@ export class WaymoWorldService {
     this.scene.add(this.axesHelper);
 
     this.fetchLidarData();
+
+    this.fetchLabelData();
 
     // Update initialized flag to avoid redundant work.
     this.initialized = true;
@@ -121,5 +122,14 @@ export class WaymoWorldService {
       this.scene.remove(points);
     }
   };
+
+  fetchLabelData(): void {
+    this.sensorDataService.getLabelData()
+      .then((labels) => {
+        this.labels = labels;
+        labels.forEach((label) => this.scene.add(label));
+      });
+
+  }
 
 }
