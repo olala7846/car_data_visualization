@@ -1,17 +1,16 @@
 <html>
   <head></head>
   <body>
-    <mat-toolbar fxLayout="row">
-        <div fxFlex="60">
-            <span>Waymo Data Visualization</span>
-        </div>
-        <div fxFlex="grow">
-        </div>
-        <div fxFlex="20">
-          <a href="https://github.com/olala7846/car_data_visualization">
-            <span>author: hcchao@</span>
-          </a>
-        </div>
+    <mat-toolbar color="primary" fxLayout="row">
+      <mat-toolbar-row>
+        <span>Waymo Data Visualization</span>
+        <span> by hcchao@</span>
+        <span class="toolbar-spacer"></span>
+        <button mat-icon-button
+          onclick="window.open('https://github.com/olala7846/car_data_visualization')">
+          <mat-icon>link</mat-icon>
+        </button>
+      </mat-toolbar-row>
     </mat-toolbar>
     <div class="view-container" fxLayout="row" fxFill>
       <app-main-view fxFlex="70"></app-main-view>

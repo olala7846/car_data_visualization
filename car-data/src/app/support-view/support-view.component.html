@@ -35,11 +35,16 @@
 
     <h2>Camera</h2>
     <section>
-      <mat-label>Choose a camera</mat-label>
-      <mat-select>
+      <mat-label>Select camera to visualize</mat-label>
+      <mat-select [value]="selectedCamera" (selectionChange)="onCameraSelected($event)">
         <mat-option *ngFor="let camera of cameraNames" [value]="camera">{{camera}}</mat-option>
       </mat-select>
     </section>
+
+    <div *ngIf="selectedCamera" class="img-container">
+      <img class="camera-img"
+        src="/assets/1.{{selectedCamera}}.png" alt="{{selectedCamera}} image">
+    </div>
 
   </mat-card-content>
 </mat-card>

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 import { Injectable } from '@angular/core';
-import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points, MeshPhongMaterial, MeshBasicMaterial } from 'three';
-import { SensorDataService, LabelBoundingBox } from './sensor-data.service';
+import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points, MeshPhongMaterial, MeshBasicMaterial, PointsMaterial } from 'three';
+import { SensorDataService, LabelBoundingBox, CarCamera } from './sensor-data.service';
 import { LidarName, CameraName, LabelType } from './sensor-data.service';
 
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
@@ -10,6 +10,13 @@ const CAR_X = 5.18;
 const CAR_Y = 2.03;
 const CAR_Z = 1.78;
 const GROUND_COLOR = 0x553333;
+
+const POINT_SIZE = 0.06;
+const POINT_CLOUD_COLOR = 0xeeeeee;
+const POINT_CLOUD_MATERIAL = new PointsMaterial({
+  color: POINT_CLOUD_COLOR,
+  size: POINT_SIZE,
+});
 
 
 // Service that stores the Waymo world (Three.js scene)
@@ -25,6 +32,7 @@ export class WaymoWorldService {
   lidarData: Points;
   lidarDataMap = new Map<LidarName, Points>();
   labels: Array<LabelBoundingBox>;
+  cameras: Array<CarCamera>;
 
   public enableAxesHelper = true;
   public enableGroundHelper = true;
@@ -56,7 +64,7 @@ export class WaymoWorldService {
 
     this.fetchLidarData();
 
-    this.fetchLabelData();
+    this.fetchLabelAndFrustrumData();
 
     // Update initialized flag to avoid redundant work.
     this.initialized = true;
@@ -101,12 +109,20 @@ export class WaymoWorldService {
     Object.values(LidarName).forEach((name) => {
       let pcdUrl = `/assets/laser_${name}.pcd`;
       this.sensorDataService.getPointCloudData(pcdUrl)
+        .then(this.applyPointCloudStyle)
         .then((data: Points) => {
-          console.log(`Lidar ${name} data loaded`);
           this.lidarDataMap.set(name, data);
           this.scene.add(data);
         });
     })
+  }
+
+  applyPointCloudStyle(points: Points): Points {
+    points.traverse((node) => {
+      if (node instanceof THREE.Points)
+      node.material = POINT_CLOUD_MATERIAL;
+    });
+    return points;
   }
 
   setEnableAxesHelper(enable: boolean): void {
@@ -137,13 +153,18 @@ export class WaymoWorldService {
     }
   };
 
-  fetchLabelData(): void {
-    this.sensorDataService.getLabelData()
-      .then((labels) => {
-        this.labels = labels;
-        labels.forEach((label) => {
+  fetchLabelAndFrustrumData(): void {
+    this.sensorDataService.getLabelAndCameraData()
+      .then((labelsAndCameras) => {
+        this.labels = labelsAndCameras.labels;
+        this.labels.forEach((label) => {
           this.scene.add(label.boundingBox);
-          this.hasAtLeastOneLabel.set(label.type, true);
+          this.hasAtLeastOneLabel.set(label.type, true);;;;
+        });
+
+        this.cameras = labelsAndCameras.cameras;
+        this.cameras.forEach((cameraData) => {
+
         });
       });
   }
@@ -160,5 +181,18 @@ export class WaymoWorldService {
         }
       });
   }
+
+  visualizeCamera(cameraName: CameraName): void {
+    console.log(`Visualize camera ${cameraName}`);
+    for (let camera of this.cameras) {
+      if (camera.cameraName === cameraName) {
+        this.scene.add(camera.helper);
+      } else {
+        this.scene.remove(camera.helper);
+      }
+    }
+
+  }
+
 
 }

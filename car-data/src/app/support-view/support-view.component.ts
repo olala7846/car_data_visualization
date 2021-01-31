@@ -11,6 +11,7 @@ export class SupportViewComponent implements OnInit {
 
   enableAxesHelper: boolean;
   enableGroundWireframe: boolean;
+  selectedCamera: string;
 
   lidarNames = Object.values(LidarName);
   labelTypes = Object.values(LabelType);
@@ -21,5 +22,11 @@ export class SupportViewComponent implements OnInit {
   ngOnInit(): void { }
 
   ngAfterVewInit(): void { }
+
+  onCameraSelected(event: any): void {
+    let selectedCamera = event.value;
+    this.selectedCamera = selectedCamera
+    this.worldService.visualizeCamera(selectedCamera);
+  }
 
 }

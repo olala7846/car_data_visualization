@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
-import { Points, Object3D, BoxGeometry, WireframeGeometry, LineBasicMaterial, LineSegments } from 'three';
+import { Points, Object3D, BoxGeometry, WireframeGeometry, LineBasicMaterial, LineSegments, PerspectiveCamera, CameraHelper } from 'three';
+import * as THREE from 'three';
 
 export enum LidarName {
   TOP = 'TOP',
@@ -26,13 +27,26 @@ export enum LabelType {
   CYCLIST = 'CYCLIST',
 }
 
+export interface LabelAndCameraData {
+  cameras: Array<CarCamera>,
+  labels: Array<LabelBoundingBox>,
+}
+
 export interface LabelBoundingBox {
   type: LabelType,
   boundingBox: Object3D,
 }
 
-const LABEL_DATA_URL = '/assets/1.data.json';
+export interface CarCamera {
+  cameraName: string,
+  camera: PerspectiveCamera,
+  cameraObject: Object3D,
+  helper: CameraHelper,
+}
+
+const LABEL_AND_FRUSTRUM_DATA_URL = '/assets/1.data.json';
 const JSON_DATA_LABELS_KEY = 'labels';
+const JSON_DATA_FRUSTRUM_KEY = 'frustrums';
 const LABEL_COLOR = 0xebe534;
 
 @Injectable({
@@ -69,13 +83,62 @@ export class SensorDataService {
     });
   }
 
-  getLabelData(): Promise<Array<LabelBoundingBox>> {
-    return fetch(LABEL_DATA_URL)
+  getLabelAndCameraData(): Promise<LabelAndCameraData> {
+    return fetch(LABEL_AND_FRUSTRUM_DATA_URL)
       .then((response) => response.json())
-      .then((json) => this.toBoundingBoxes(json));
+      .then((json) => {
+        let cameras = this.getCarCameras(json);
+        let labels = this.getLabelBoundingBoxes(json);
+        return {
+          cameras: cameras,
+          labels: labels,
+        };
+      });
   }
 
-  private toBoundingBoxes(jsonData: any): Array<LabelBoundingBox> {
+  getCarCameras(jsonData: any): Array<CarCamera> {
+    let frustrums: Array<any> = jsonData[JSON_DATA_FRUSTRUM_KEY];
+    return frustrums.map(this.toHelperCamera);
+  }
+
+  toHelperCamera(cameraData: any): CarCamera {
+      // http://mesh.brown.edu/en193s08-2003/notes/en193s08-proj.pdf
+    let cameraName = cameraData.name;
+    let fv, fu, cv, cu;
+    let k1, k2, p1, p2, k3
+    [fv, fu, cv, cu, k1, k2, p1, p2, k3] = cameraData['intrinsic'];
+    let transform = new THREE.Matrix4();
+    let transformRowMajor = cameraData['extrinsic'];
+    transform.elements = cameraData['extrinsic'];
+    // Matrix4D.elements stores data in column major form, we need to transpose it
+    transform = transform.transpose();
+
+    // TODO: camera aspect ratio seems a bit off? (always equals to 1)
+    let aspectRatio = fu/fv;
+    // all camera images has width 1920
+    let fov = Math.atan2(fv, 960.0) / Math.PI * 180;
+    let camera = new THREE.PerspectiveCamera(fov, aspectRatio, 0.5, 30);
+
+    // Waymo camera seems to point to +x axis instead of -Z
+    camera.up.set(0, 0, 1);
+    camera.lookAt(1, 0, 0);
+    let carCamera = new Object3D();
+    carCamera.add(camera);
+    carCamera.matrixAutoUpdate = false;
+    carCamera.applyMatrix4(transform);
+    carCamera.updateMatrixWorld(true);
+
+    let helper = new THREE.CameraHelper(camera);
+
+    return {
+      cameraName: cameraName,
+      camera: camera,
+      helper: helper,
+      cameraObject: carCamera,
+    };
+  }
+
+  private getLabelBoundingBoxes(jsonData: any): Array<LabelBoundingBox> {
     let labels = jsonData[JSON_DATA_LABELS_KEY];
     return labels.map(this.toSingleBoundingBox.bind(this));
   }
