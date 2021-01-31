@@ -5,18 +5,22 @@
       <mat-checkbox
           [checked]="worldService.enableAxesHelper"
           (change)="worldService.setEnableAxesHelper($event.checked)">
-          AxesHelper (+x: red, +y: green, +z: blue)
-        </mat-checkbox>
-      <!-- TODO: Enalbe ground wire frame -->
-      <!-- <mat-checkbox>Ground (Wire Frame)</mat-checkbox> -->
+        Axes Helper (+x: red, +y: green, +z: blue)
+      </mat-checkbox>
+      <mat-checkbox
+          [checked]="worldService.enableGroundHelper"
+          (change)="worldService.setEnableGroundHelper($event.checked)">
+        Ground Helper (Wire Frame)
+      </mat-checkbox>
     </section>
 
     <h2>Label</h2>
     <section>
-      <mat-checkbox>Bicycle</mat-checkbox>
-      <mat-checkbox>Car</mat-checkbox>
-      <mat-checkbox>Human</mat-checkbox>
-      <mat-checkbox>Sign</mat-checkbox>
+      <mat-checkbox *ngFor="let labelType of labelTypes"
+        [checked]="worldService.labelEnabledMap.get(labelType)"
+        (change)="worldService.setLabelEnabled(labelType, $event.checked)">
+        {{labelType}}
+      </mat-checkbox>
     </section>
 
     <h2>Lidar Data</h2>
@@ -24,7 +28,8 @@
       <mat-checkbox *ngFor="let lidarName of lidarNames"
         [checked]="worldService.lidarEnabledMap.get(lidarName)"
         (change)="worldService.setLidarEnabled(lidarName, $event.checked)">
-        {{lidarName}}</mat-checkbox>
+        {{lidarName}}
+      </mat-checkbox>
     </section>
 
     <h2>Camera</h2>

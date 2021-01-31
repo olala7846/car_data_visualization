@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { WaymoWorldService } from '../waymo-world.service';
-import { CameraName, LidarName } from '../sensor-data.service';
+import { CameraName, LidarName, LabelType } from '../sensor-data.service';
 
 @Component({
   selector: 'app-support-view',
@@ -13,14 +13,12 @@ export class SupportViewComponent implements OnInit {
   enableGroundWireframe: boolean;
 
   lidarNames = Object.values(LidarName);
-
+  labelTypes = Object.values(LabelType);
   cameraNames = Object.values(CameraName);
-  camera: string;
 
   constructor(public worldService: WaymoWorldService) { }
 
   ngOnInit(): void { }
-
 
   ngAfterVewInit(): void { }
 

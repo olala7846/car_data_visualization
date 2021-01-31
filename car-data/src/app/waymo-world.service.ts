@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 import { Injectable } from '@angular/core';
-import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points } from 'three';
+import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points, MeshPhongMaterial, MeshBasicMaterial } from 'three';
 import { SensorDataService } from './sensor-data.service';
-import { LidarName, CameraName } from './sensor-data.service';
+import { LidarName, CameraName, LabelType } from './sensor-data.service';
 
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
 const CAR_X = 5.18;
 const CAR_Y = 2.03;
 const CAR_Z = 1.78;
-const GROUND_COLOR = 0x222222;
+const GROUND_COLOR = 0x553333;
 
 
 // Service that stores the Waymo world (Three.js scene)
@@ -18,7 +18,7 @@ const GROUND_COLOR = 0x222222;
 })
 export class WaymoWorldService {
   waymoVehicle: Object3D;
-  ground: THREE.Mesh;
+  ground: Object3D;
   scene: Scene;
   axesHelper: AxesHelper;
   initialized: boolean = false;
@@ -27,8 +27,11 @@ export class WaymoWorldService {
   labels: Array<Object3D>;
 
   public enableAxesHelper = true;
+  public enableGroundHelper = true;
   public lidarEnabledMap = new Map<LidarName, boolean>(
     Object.values(LidarName).map((name) => [name, true]));
+  public labelEnabledMap = new Map<LabelType, boolean>(
+    Object.values(LabelType).map((type) => [type, true]));
 
   constructor(private sensorDataService: SensorDataService) { }
 
@@ -39,7 +42,7 @@ export class WaymoWorldService {
     }
     this.scene = new Scene();
 
-    this.waymoVehicle = this.createEgoVehicle();
+    this.waymoVehicle = this.createWaymoVehicle();
     this.scene.add(this.waymoVehicle);
 
     this.ground = this.createGround();
@@ -64,16 +67,16 @@ export class WaymoWorldService {
     return this.scene;
   }
 
-  createGround(): THREE.Mesh {
-    const planeGeometry = new THREE.PlaneGeometry(1000, 1000, 32, 32);
-    const planeMaterial = new THREE.MeshBasicMaterial({
-      color: GROUND_COLOR,
-      side: THREE.DoubleSide,
-    });
-    return new THREE.Mesh(planeGeometry, planeMaterial);
+  createGround(): Object3D {
+    let planeGeometry = new THREE.PlaneGeometry(1000, 1000, 128, 128);
+    let planeWireFrame = new WireframeGeometry(planeGeometry);
+    let material = new MeshBasicMaterial({color: GROUND_COLOR})
+    let groundHelper = new LineSegments(planeWireFrame, material);
+    groundHelper.position.setZ(-CAR_Z/2);
+    return groundHelper;
   }
 
-  createEgoVehicle(): Object3D {
+  createWaymoVehicle(): Object3D {
     let car = new Object3D();
     let carGeometry = new BoxGeometry(CAR_X, CAR_Y, CAR_Z);
     let carWireFrame = new WireframeGeometry(carGeometry);
@@ -113,6 +116,15 @@ export class WaymoWorldService {
     }
   }
 
+  setEnableGroundHelper(enable: boolean): void {
+    this.enableGroundHelper = enable;
+    if (enable) {
+      this.scene.add(this.ground);
+    } else {
+      this.scene.remove(this.ground);
+    }
+  }
+
   setLidarEnabled(lidarName: string, enable: boolean): void {
     let points = this.lidarDataMap.get(lidarName as LidarName);
     this.lidarEnabledMap.set(lidarName as LidarName, enable);
@@ -127,9 +139,12 @@ export class WaymoWorldService {
     this.sensorDataService.getLabelData()
       .then((labels) => {
         this.labels = labels;
-        labels.forEach((label) => this.scene.add(label));
+        labels.forEach((label) => this.waymoVehicle.add(label));
       });
+  }
 
+  setLabelEnabled(labelName: string, enable: boolean): void {
+    this.labelEnabledMap.set(labelName as LabelType, enable);
   }
 
 }

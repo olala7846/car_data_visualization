@@ -18,6 +18,13 @@ export enum CameraName {
   SIDE_RIGHT = 'SIDE_RIGHT',
 }
 
+export enum LabelType {
+  VEHICLE = 'VEHICLE',
+  PEDESTRIAN = 'PEDESTRIAN',
+  SIGN = 'SIGN',
+  CYCLIST = 'CYCLIST',
+}
+
 const LABEL_DATA_URL = '/assets/1.data.json';
 const JSON_DATA_LABELS_KEY = 'labels';
 const LABEL_COLOR = 0xebe534;
