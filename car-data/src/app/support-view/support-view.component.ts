@@ -12,6 +12,7 @@ export class SupportViewComponent implements OnInit {
   enableAxesHelper: boolean;
   enableGroundWireframe: boolean;
   selectedCamera: string;
+  shouldDisplayFrustum = true;
 
   lidarNames = Object.values(LidarName);
   labelTypes = Object.values(LabelType);
@@ -26,7 +27,12 @@ export class SupportViewComponent implements OnInit {
   onCameraSelected(event: any): void {
     let selectedCamera = event.value;
     this.selectedCamera = selectedCamera
-    this.worldService.visualizeCamera(selectedCamera);
+    this.worldService.visualizeCamera(selectedCamera, this.shouldDisplayFrustum);
+  }
+
+  setDisplayFrustum(enable: boolean): void {
+    this.shouldDisplayFrustum = enable;
+    this.worldService.visualizeCamera(this.selectedCamera as CameraName, enable);
   }
 
 }

@@ -35,6 +35,13 @@
 
     <h2>Camera</h2>
     <section>
+      <mat-checkbox
+        [checked]="shouldDisplayFrustum"
+        (change)="setDisplayFrustum($event.checked)">
+        Show Camera Helper
+      </mat-checkbox>
+      <br>
+      <br>
       <mat-label>Select camera to visualize</mat-label>
       <mat-select [value]="selectedCamera" (selectionChange)="onCameraSelected($event)">
         <mat-option *ngFor="let camera of cameraNames" [value]="camera">{{camera}}</mat-option>

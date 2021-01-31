@@ -182,10 +182,10 @@ export class WaymoWorldService {
       });
   }
 
-  visualizeCamera(cameraName: CameraName): void {
+  visualizeCamera(cameraName: CameraName, shouldDisplayFrustrum: boolean): void {
     console.log(`Visualize camera ${cameraName}`);
     for (let camera of this.cameras) {
-      if (camera.cameraName === cameraName) {
+      if (shouldDisplayFrustrum && camera.cameraName === cameraName) {
         this.scene.add(camera.helper);
       } else {
         this.scene.remove(camera.helper);
