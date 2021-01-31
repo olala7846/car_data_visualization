@@ -1,1 +1,34 @@
-<p>support-view works!</p>
+<mat-card>
+  <mat-card-content>
+    <h2>Helper</h2>
+    <section>
+      <mat-checkbox>AxesHelper</mat-checkbox>
+      <mat-checkbox>Ground (Wire Frame)</mat-checkbox>
+    </section>
+
+    <h2>Label</h2>
+    <section>
+      <mat-checkbox>Bicycle</mat-checkbox>
+      <mat-checkbox>Car</mat-checkbox>
+      <mat-checkbox>Human</mat-checkbox>
+      <mat-checkbox>Sign</mat-checkbox>
+    </section>
+
+    <h2>Lidar Data</h2>
+    <section>
+      <mat-checkbox>Front</mat-checkbox>
+      <mat-checkbox>Front Right</mat-checkbox>
+      <mat-checkbox>Front Left</mat-checkbox>
+      <mat-checkbox>Rear</mat-checkbox>
+    </section>
+
+    <h2>Camera</h2>
+    <section>
+      <mat-label>Choose a camera</mat-label>
+      <mat-select>
+        <mat-option *ngFor="let camera of cameraNames" [value]="camera">{{camera}}</mat-option>
+      </mat-select>
+    </section>
+
+  </mat-card-content>
+</mat-card>
