@@ -2,8 +2,13 @@
   <mat-card-content>
     <h2>Helper</h2>
     <section>
-      <mat-checkbox>AxesHelper</mat-checkbox>
-      <mat-checkbox>Ground (Wire Frame)</mat-checkbox>
+      <mat-checkbox
+          [checked]="worldService.enableAxesHelper"
+          (change)="worldService.setEnableAxesHelper($event.checked)">
+          AxesHelper (+x: red, +y: green, +z: blue)
+        </mat-checkbox>
+      <!-- TODO: Enalbe ground wire frame -->
+      <!-- <mat-checkbox>Ground (Wire Frame)</mat-checkbox> -->
     </section>
 
     <h2>Label</h2>
@@ -16,10 +21,10 @@
 
     <h2>Lidar Data</h2>
     <section>
-      <mat-checkbox>Front</mat-checkbox>
-      <mat-checkbox>Front Right</mat-checkbox>
-      <mat-checkbox>Front Left</mat-checkbox>
-      <mat-checkbox>Rear</mat-checkbox>
+      <mat-checkbox *ngFor="let lidarName of lidarNames"
+        [checked]="worldService.lidarEnabledMap.get(lidarName)"
+        (change)="worldService.setLidarEnabled(lidarName, $event.checked)">
+        {{lidarName}}</mat-checkbox>
     </section>
 
     <h2>Camera</h2>

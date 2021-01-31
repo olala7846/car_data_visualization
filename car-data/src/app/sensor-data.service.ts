@@ -1,7 +1,22 @@
 import { Injectable } from '@angular/core';
 import { PCDLoader } from 'three/examples/jsm/loaders/PCDLoader';
 import { Points } from 'three';
-import { Observable, from } from 'rxjs';
+
+export enum LidarName {
+  TOP = 'TOP',
+  FRONT = 'FRONT',
+  SIDE_LEFT = 'SIDE_LEFT',
+  SIDE_RIGHT = 'SIDE_RIGHT',
+  REAR = 'REAR',
+}
+
+export enum CameraName {
+  FRONT = 'FRONT',
+  FRONT_LEFT = 'FRONT_LEFT',
+  FRONT_RIGHT = 'FRONT_RIGHT',
+  SIDE_LEFT = 'SIDE_LEFT',
+  SIDE_RIGHT = 'SIDE_RIGHT',
+}
 
 @Injectable({
   providedIn: 'root'

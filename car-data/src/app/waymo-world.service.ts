@@ -3,12 +3,14 @@ import * as THREE from 'three';
 import { Injectable } from '@angular/core';
 import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points } from 'three';
 import { SensorDataService } from './sensor-data.service';
+import { LidarName, CameraName } from './sensor-data.service';
 
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
 const CAR_X = 5.18;
 const CAR_Y = 2.03;
 const CAR_Z = 1.78;
 const GROUND_COLOR = 0x222222;
+
 
 // Service that stores the Waymo world (Three.js scene)
 @Injectable({
@@ -21,6 +23,11 @@ export class WaymoWorldService {
   axesHelper: AxesHelper;
   initialized: boolean = false;
   lidarData: Points;
+  lidarDataMap = new Map<LidarName, Points>();
+
+  public enableAxesHelper = true;
+  public lidarEnabledMap = new Map<LidarName, boolean>(
+    Object.values(LidarName).map((name) => [name, true]));
 
   constructor(private sensorDataService: SensorDataService) {
     // Inject data service to fetch point cloud data
@@ -39,6 +46,7 @@ export class WaymoWorldService {
     this.ground = this.createGround();
     this.scene.add(this.ground);
 
+    // Default enable AxesHelper
     this.axesHelper = this.createAxesHelper();
     this.scene.add(this.axesHelper);
 
@@ -84,12 +92,34 @@ export class WaymoWorldService {
   }
 
   fetchLidarData(): void {
-    const LIDAR_FRONT_URL = '/assets/laser_TOP.pcd';
-    this.sensorDataService.getPointCloudData(LIDAR_FRONT_URL)
-      .then((data: Points) => {
-        this.lidarData = data;
-        this.scene.add(data);
-      });
+    Object.values(LidarName).forEach((name) => {
+      let pcdUrl = `/assets/laser_${name}.pcd`;
+      this.sensorDataService.getPointCloudData(pcdUrl)
+        .then((data: Points) => {
+          console.log(`Lidar ${name} data loaded`);
+          this.lidarDataMap.set(name, data);
+          this.scene.add(data);
+        });
+    })
   }
+
+  setEnableAxesHelper(enable: boolean): void {
+    this.enableAxesHelper = enable;
+    if (enable) {
+      this.scene.add(this.axesHelper);
+    } else {
+      this.scene.remove(this.axesHelper);
+    }
+  }
+
+  setLidarEnabled(lidarName: string, enable: boolean): void {
+    let points = this.lidarDataMap.get(lidarName as LidarName);
+    this.lidarEnabledMap.set(lidarName as LidarName, enable);
+    if (enable) {
+      this.scene.add(points) ;
+    } else {
+      this.scene.remove(points);
+    }
+  };
 
 }
