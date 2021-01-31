@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 import { Injectable } from '@angular/core';
-import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper } from 'three';
+import { Scene, Object3D, BoxGeometry, WireframeGeometry, LineSegments, AxesHelper, Points } from 'three';
+import { SensorDataService } from './sensor-data.service';
 
 // Chrysler Pacifica has size 204″ L x 80″ W x 70″ H
 const CAR_X = 5.18;
@@ -19,8 +20,9 @@ export class WaymoWorldService {
   scene: Scene;
   axesHelper: AxesHelper;
   initialized: boolean = false;
+  lidarData: Points;
 
-  constructor() {
+  constructor(private sensorDataService: SensorDataService) {
     // Inject data service to fetch point cloud data
   }
 
@@ -39,6 +41,8 @@ export class WaymoWorldService {
 
     this.axesHelper = this.createAxesHelper();
     this.scene.add(this.axesHelper);
+
+    this.fetchLidarData();
 
     // Update initialized flag to avoid redundant work.
     this.initialized = true;
@@ -77,6 +81,15 @@ export class WaymoWorldService {
     let axesHelper = new AxesHelper(100);
     axesHelper.position.set(0, 0, 0);
     return axesHelper;
+  }
+
+  fetchLidarData(): void {
+    const LIDAR_FRONT_URL = '/assets/laser_TOP.pcd';
+    this.sensorDataService.getPointCloudData(LIDAR_FRONT_URL)
+      .then((data: Points) => {
+        this.lidarData = data;
+        this.scene.add(data);
+      });
   }
 
 }

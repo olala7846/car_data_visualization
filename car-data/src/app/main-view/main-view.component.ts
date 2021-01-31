@@ -58,6 +58,10 @@ export class MainViewComponent implements OnInit {
     if (this.renderer) {
       this.renderer.setSize(this.containerWidth, this.containerHeight);
     }
+    if (this.camera) {
+      this.camera.aspect = this.containerWidth / this.containerHeight;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   initCamera(): PerspectiveCamera {
@@ -83,9 +87,6 @@ export class MainViewComponent implements OnInit {
     let canvases = document.getElementsByTagName('canvas');
     if (canvases.length > 0) {
       container.removeChild(canvases[0]);
-      // for (let canvas of Array.from(canvases)) {
-      //   container.removeChild(canvas);
-      // }
     }
     container.appendChild(this.renderer.domElement);
   }
